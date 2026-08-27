@@ -25,6 +25,7 @@ jobs:
           cache: npm
       - name: Configure Pages
         id: pages
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
@@ -33,7 +34,7 @@ jobs:
       - name: Build static site
         env:
           GITHUB_PAGES: "1"
-          PAGES_BASE: ${{ steps.pages.outputs.base_path }}
+          PAGES_BASE: ${{ steps.pages.outputs.base_path || '/GoL-Systems/' }}
         run: npm run build:pages
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
