@@ -27,10 +27,8 @@ jobs:
         id: pages
         continue-on-error: true
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Install
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Build static site
         env:
           GITHUB_PAGES: "1"
