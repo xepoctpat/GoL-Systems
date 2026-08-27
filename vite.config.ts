@@ -21,6 +21,14 @@ function hasGlobbedMigrations(root: string): boolean {
   }
 }
 
+const isGitHubPages = process.env.GITHUB_PAGES === "1";
+
+function githubPagesBase(): string {
+  const raw = (process.env.PAGES_BASE || "/GoL-Systems/").trim() || "/";
+  if (raw === "/") return "/";
+  return raw.endsWith("/") ? raw : `${raw}/`;
+}
+
 /**
  * Finish PGLite bootstrap during dev-server setup (before traffic). Vite awaits
  * async `configureServer` hooks. Production: `src/lib/db` kicks `ensureDbReady`
@@ -146,6 +154,7 @@ function authPopupPlugin(): Plugin {
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
 export default defineConfig(({ command, isPreview }) => ({
+  ...(isGitHubPages ? { base: githubPagesBase() } : {}),
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -166,16 +175,31 @@ export default defineConfig(({ command, isPreview }) => ({
     // PWA head + ?install=1 tutorial page; runs before Start/Nitro.
     grokPwaPlugin(),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart(
+      isGitHubPages
+        ? {
+            spa: { enabled: true },
+            prerender: { enabled: true, crawlLinks: false, autoSubfolderIndex: true },
+            pages: [{ path: "/" }],
+            router: {
+              basepath: githubPagesBase() === "/" ? undefined : githubPagesBase().replace(/\/$/, ""),
+            },
+          }
+        : {},
+    ),
     ...(command === "build" || isPreview
       ? [
-          nitro({
-            preset: "vercel",
-            // Auto-registers server/middleware/* (the PWA install page +
-            // manifest + head-tag middleware). Nitro v3 defaults serverDir to
-            // false, so removing this silently unwires /?install=1 on deploys.
-            serverDir: "./server",
-          }),
+          nitro(
+            isGitHubPages
+              ? { preset: "static" }
+              : {
+                  preset: "vercel",
+                  // Auto-registers server/middleware/* (the PWA install page +
+                  // manifest + head-tag middleware). Nitro v3 defaults serverDir to
+                  // false, so removing this silently unwires /?install=1 on deploys.
+                  serverDir: "./server",
+                },
+          ),
         ]
       : []),
     viteReact(),
