@@ -45,18 +45,21 @@ interface ControlPanelProps {
 function Row({
   label,
   value,
+  hint,
   children,
 }: {
   label: string;
   value?: string;
+  hint?: string;
   children: ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
+    <label className="block space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm text-fg">{label}</span>
         {value ? <span className="font-mono text-xs tabular-nums text-muted">{value}</span> : null}
       </div>
+      {hint ? <p className="text-xs leading-relaxed text-subtle">{hint}</p> : null}
       {children}
     </label>
   );
@@ -103,33 +106,42 @@ function ToggleRow({
   onCheckedChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-0.5">
+    <div className="flex items-start justify-between gap-4 py-1">
       <div className="min-w-0">
         <div className="text-sm text-fg">{label}</div>
         {description ? (
-          <div className="text-xs leading-relaxed text-subtle" title={description}>
-            {description}
-          </div>
+          <p className="mt-0.5 text-xs leading-relaxed text-subtle">{description}</p>
         ) : null}
       </div>
-      <button
-        type="button"
+      <div
         role="switch"
         aria-checked={checked}
         aria-label={label}
-        onClick={() => onCheckedChange(!checked)}
-        className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full transition-colors duration-150",
-          checked ? "bg-accent" : "bg-raised shadow-[0_0_0_1px_rgba(255,255,255,0.10)]",
-        )}
+        className="inline-flex h-9 shrink-0 rounded-md bg-bg p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
       >
-        <span
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => onCheckedChange(false)}
           className={cn(
-            "absolute top-0.5 size-5 rounded-full bg-fg transition-transform duration-150",
-            checked ? "translate-x-5 bg-accent-fg" : "translate-x-0.5",
+            "w-11 rounded-sm text-xs font-medium transition-colors duration-150",
+            !checked ? "bg-raised text-fg" : "text-subtle hover:text-muted",
           )}
-        />
-      </button>
+        >
+          Off
+        </button>
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => onCheckedChange(true)}
+          className={cn(
+            "w-11 rounded-sm text-xs font-medium transition-colors duration-150",
+            checked ? "bg-accent text-accent-fg" : "text-subtle hover:text-muted",
+          )}
+        >
+          On
+        </button>
+      </div>
     </div>
   );
 }
@@ -140,6 +152,13 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "world", label: "World" },
   { id: "loops", label: "Loops" },
 ];
+
+const PAINT_HINT: Record<PaintMode, string> = {
+  life: "Draw living cells onto the field.",
+  erase: "Wipe cells back to empty ground.",
+  regulator: "Plant a cell that holds order around it.",
+  energy: "Feed the soil so nearby life can last.",
+};
 
 export function ControlPanel(props: ControlPanelProps) {
   const {
@@ -167,6 +186,7 @@ export function ControlPanel(props: ControlPanelProps) {
   } = props;
 
   const [tab, setTab] = useState<TabId>("run");
+  const activePreset = PRESETS.find((p) => p.id === preset);
 
   const modes: { id: PaintMode; label: string; icon: typeof Pencil }[] = [
     { id: "life", label: "Life", icon: Pencil },
@@ -218,13 +238,17 @@ export function ControlPanel(props: ControlPanelProps) {
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain no-scrollbar px-5 pb-6">
         {tab === "run" ? (
           <div className="space-y-5">
-            <Row label="Tempo" value={`${speed.toFixed(0)} /s`}>
+            <Row
+              label="Speed"
+              value={`${speed.toFixed(0)} /s`}
+              hint="How many generations tick each second."
+            >
               <RangeInput
                 min={1}
                 max={40}
                 step={1}
                 value={speed}
-                label="Generations per second"
+                label="Speed"
                 onChange={onSpeed}
               />
             </Row>
@@ -267,107 +291,149 @@ export function ControlPanel(props: ControlPanelProps) {
                 );
               })}
             </div>
-            <Row label="Radius" value={String(brush)}>
-              <RangeInput min={0} max={6} step={1} value={brush} label="Brush radius" onChange={onBrush} />
+            <p className="text-xs leading-relaxed text-subtle">{PAINT_HINT[paintMode]}</p>
+            <Row
+              label="Brush size"
+              value={String(brush)}
+              hint="How wide each stroke is, in cells."
+            >
+              <RangeInput min={0} max={6} step={1} value={brush} label="Brush size" onChange={onBrush} />
             </Row>
             <p className="text-xs leading-relaxed text-subtle">
-              Drag on the field to draw. Regulators hold local order.
+              Drag on the field to draw. Pause first if you want a still canvas.
             </p>
           </div>
         ) : null}
 
         {tab === "world" ? (
           <div className="space-y-5">
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((p) => {
-                const on = preset === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    title={p.blurb}
-                    onClick={() => onSeed(p.id)}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-sm transition-colors duration-150",
-                      on ? "bg-accent text-accent-fg" : "bg-raised text-muted hover:text-fg",
-                    )}
-                  >
-                    {p.name}
-                  </button>
-                );
-              })}
+            <div>
+              <div className="flex flex-wrap gap-2">
+                {PRESETS.map((p) => {
+                  const on = preset === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      title={p.blurb}
+                      onClick={() => onSeed(p.id)}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-sm transition-colors duration-150",
+                        on ? "bg-accent text-accent-fg" : "bg-raised text-muted hover:text-fg",
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {activePreset ? (
+                <p className="mt-2 text-xs leading-relaxed text-subtle">{activePreset.blurb}</p>
+              ) : null}
             </div>
             <ToggleRow
-              label="Couple climate"
-              description="Heat, energy, and season rewrite survival."
+              label="Weather shapes survival"
+              description="Heat, energy, and season decide who lives."
               checked={settings.environment}
               onCheckedChange={(v) => onSettings({ environment: v })}
             />
-            <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-              <Row label="Latitude" value={settings.climate.toFixed(2)}>
-                <RangeInput
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={settings.climate}
-                  label="Latitude gradient"
-                  onChange={(v) => onSettings({ climate: v })}
-                />
-              </Row>
-              <Row label="Season rate" value={settings.seasonRate.toFixed(2)}>
-                <RangeInput
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={settings.seasonRate}
-                  label="Season rate"
-                  onChange={(v) => onSettings({ seasonRate: v })}
-                />
-              </Row>
-              <Row label="Season depth" value={settings.seasonAmp.toFixed(2)}>
-                <RangeInput
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={settings.seasonAmp}
-                  label="Season depth"
-                  onChange={(v) => onSettings({ seasonAmp: v })}
-                />
-              </Row>
-              <Row label="Energy" value={settings.energyRichness.toFixed(2)}>
-                <RangeInput
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={settings.energyRichness}
-                  label="Energy richness"
-                  onChange={(v) => onSettings({ energyRichness: v })}
-                />
-              </Row>
-              <Row label="Heat" value={settings.metabolicHeat.toFixed(2)}>
-                <RangeInput
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={settings.metabolicHeat}
-                  label="Metabolic heat"
-                  onChange={(v) => onSettings({ metabolicHeat: v })}
-                />
-              </Row>
-              <Row label="Noise" value={settings.noise.toFixed(2)}>
-                <RangeInput
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={settings.noise}
-                  label="Noise"
-                  onChange={(v) => onSettings({ noise: v })}
-                />
-              </Row>
-            </div>
+            <Row
+              label="Climate tilt"
+              value={settings.climate.toFixed(2)}
+              hint="Higher tilts the north colder and the south hotter."
+            >
+              <RangeInput
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.climate}
+                label="Climate tilt"
+                onChange={(v) => onSettings({ climate: v })}
+              />
+            </Row>
+            <Row
+              label="Season speed"
+              value={settings.seasonRate.toFixed(2)}
+              hint="How quickly summer and winter cycle."
+            >
+              <RangeInput
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.seasonRate}
+                label="Season speed"
+                onChange={(v) => onSettings({ seasonRate: v })}
+              />
+            </Row>
+            <Row
+              label="Season strength"
+              value={settings.seasonAmp.toFixed(2)}
+              hint="How harsh the swing between summer and winter is."
+            >
+              <RangeInput
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.seasonAmp}
+                label="Season strength"
+                onChange={(v) => onSettings({ seasonAmp: v })}
+              />
+            </Row>
+            <Row
+              label="Available energy"
+              value={settings.energyRichness.toFixed(2)}
+              hint="How much the soil can feed."
+            >
+              <RangeInput
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.energyRichness}
+                label="Available energy"
+                onChange={(v) => onSettings({ energyRichness: v })}
+              />
+            </Row>
+            <Row
+              label="Metabolic heat"
+              value={settings.metabolicHeat.toFixed(2)}
+              hint="How much living cells warm their neighbors."
+            >
+              <RangeInput
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.metabolicHeat}
+                label="Metabolic heat"
+                onChange={(v) => onSettings({ metabolicHeat: v })}
+              />
+            </Row>
+            <Row
+              label="Random flicker"
+              value={settings.noise.toFixed(2)}
+              hint="Chance a cell appears or dies for no reason."
+            >
+              <RangeInput
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.noise}
+                label="Random flicker"
+                onChange={(v) => onSettings({ noise: v })}
+              />
+            </Row>
             <div className="space-y-3">
-              <ToggleRow label="Show heat" checked={showHeat} onCheckedChange={onShowHeat} />
-              <ToggleRow label="Show energy" checked={showEnergy} onCheckedChange={onShowEnergy} />
+              <ToggleRow
+                label="Heat overlay"
+                description="Tint the field by temperature."
+                checked={showHeat}
+                onCheckedChange={onShowHeat}
+              />
+              <ToggleRow
+                label="Energy overlay"
+                description="Tint the field by how well-fed the soil is."
+                checked={showEnergy}
+                onCheckedChange={onShowEnergy}
+              />
             </div>
           </div>
         ) : null}
@@ -375,61 +441,69 @@ export function ControlPanel(props: ControlPanelProps) {
         {tab === "loops" ? (
           <div className="space-y-5">
             <ToggleRow
-              label="Feedback loops"
-              description="The field observes itself and acts."
+              label="Self-regulation"
+              description="The field watches itself and acts when things drift."
               checked={settings.cybernetics}
               onCheckedChange={(v) => onSettings({ cybernetics: v })}
             />
-            <Row label="Homeostatic gain" value={settings.homeoGain.toFixed(2)}>
+            <Row
+              label="Correction strength"
+              value={settings.homeoGain.toFixed(2)}
+              hint="How hard it restocks empty ground or thins a crowd."
+            >
               <RangeInput
                 min={0}
                 max={1}
                 step={0.01}
                 value={settings.homeoGain}
-                label="Homeostatic gain"
+                label="Correction strength"
                 onChange={(v) => onSettings({ homeoGain: v })}
               />
             </Row>
             <ToggleRow
-              label="Adaptive setpoint"
-              description="Target density tracks what the field can hold."
+              label="Follow the field"
+              description="The target density tracks what this world can actually hold."
               checked={settings.autoSetpoint}
               onCheckedChange={(v) => onSettings({ autoSetpoint: v })}
             />
             {!settings.autoSetpoint ? (
-              <Row label="Setpoint" value={`${(settings.setpoint * 100).toFixed(0)}%`}>
+              <Row
+                label="Target density"
+                value={`${(settings.setpoint * 100).toFixed(0)}%`}
+                hint="How full the field should stay."
+              >
                 <RangeInput
                   min={0.04}
                   max={0.4}
                   step={0.01}
                   value={settings.setpoint}
-                  label="Setpoint"
+                  label="Target density"
                   onChange={(v) => onSettings({ setpoint: v })}
                 />
               </Row>
             ) : null}
             <div className="space-y-3">
               <ToggleRow
-                label="Ultrastability"
-                description="Frozen or dead fields mutate B/S rules."
+                label="Rewrite rules when stuck"
+                description="If the world freezes or dies, try a new birth/survive rule."
                 checked={settings.ultraEnabled}
                 onCheckedChange={(v) => onSettings({ ultraEnabled: v })}
               />
               <ToggleRow
-                label="Requisite variety"
-                description="Low diversity injects noise."
+                label="Stir sameness"
+                description="If everything looks alike, inject a little noise."
                 checked={settings.varietyEnabled}
                 onCheckedChange={(v) => onSettings({ varietyEnabled: v })}
               />
               <ToggleRow
-                label="Autopoiesis"
-                description="Long-lived clusters are protected."
+                label="Protect established life"
+                description="Long-lived clusters are harder to kill."
                 checked={settings.autoEnabled}
                 onCheckedChange={(v) => onSettings({ autoEnabled: v })}
               />
               <ToggleRow
-                label="Observer loop"
-                description="The controller’s goal is itself a moving target."
+                label="Moving goal"
+                description="The target itself slowly drifts, so the controller never settles."
                 checked={settings.observerEnabled}
                 onCheckedChange={(v) => onSettings({ observerEnabled: v })}
               />

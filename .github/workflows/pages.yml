@@ -32,7 +32,7 @@ jobs:
       - name: Build static site
         env:
           GITHUB_PAGES: "1"
-          PAGES_BASE: ${{ steps.pages.outputs.base_path || '/GoL-Systems/' }}
+          PAGES_BASE: ${{ steps.pages.outputs.base_path || '/homeosys/' }}
         run: npm run build:pages
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

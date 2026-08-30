@@ -24,7 +24,7 @@ function hasGlobbedMigrations(root: string): boolean {
 const isGitHubPages = process.env.GITHUB_PAGES === "1";
 
 function githubPagesBase(): string {
-  const raw = (process.env.PAGES_BASE || "/GoL-Systems/").trim() || "/";
+  const raw = (process.env.PAGES_BASE || "/homeosys/").trim() || "/";
   if (raw === "/") return "/";
   return raw.endsWith("/") ? raw : `${raw}/`;
 }
