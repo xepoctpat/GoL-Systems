@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
@@ -32,20 +33,40 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  component: () => (
+  component: RootComponent,
+});
+
+function RootComponent() {
+  return (
+    <RootDocument>
+      <Outlet />
+    </RootDocument>
+  );
+}
+
+function RootDocument({ children }: { children: ReactNode }) {
+  const inner = (
+    <>
+      <PreviewHostBridge />
+      <AuthProvider>
+        <div className="h-dvh min-h-0 overflow-hidden">{children}</div>
+      </AuthProvider>
+    </>
+  );
+
+  if (typeof document !== "undefined" && document.getElementById("homeostat-root")) {
+    return inner;
+  }
+
+  return (
     <html lang="en" className="h-dvh overflow-hidden antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body className="h-dvh overflow-hidden bg-bg font-sans text-fg">
-        <PreviewHostBridge />
-        <AuthProvider>
-          <div className="h-dvh min-h-0 overflow-hidden">
-            <Outlet />
-          </div>
-        </AuthProvider>
+        {inner}
         <Scripts />
       </body>
     </html>
-  ),
-});
+  );
+}

@@ -54,14 +54,14 @@ function Row({
   children: ReactNode;
 }) {
   return (
-    <label className="block space-y-1.5">
+    <div className="block space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm text-fg">{label}</span>
         {value ? <span className="font-mono text-xs tabular-nums text-muted">{value}</span> : null}
       </div>
       {hint ? <p className="text-xs leading-relaxed text-subtle">{hint}</p> : null}
       {children}
-    </label>
+    </div>
   );
 }
 
@@ -113,35 +113,34 @@ function ToggleRow({
           <p className="mt-0.5 text-xs leading-relaxed text-subtle">{description}</p>
         ) : null}
       </div>
-      <div
+      <button
+        type="button"
         role="switch"
         aria-checked={checked}
-        aria-label={label}
-        className="inline-flex h-9 shrink-0 rounded-md bg-bg p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
+        aria-label={`${label}: ${checked ? "on" : "off"}`}
+        onClick={(e) => {
+          onCheckedChange(!checked);
+          e.currentTarget.blur();
+        }}
+        className="inline-flex h-9 shrink-0 items-stretch rounded-md bg-bg p-0.5 shadow-[0_0_0_1px_rgba(255,255,255,0.14)]"
       >
-        <button
-          type="button"
-          tabIndex={-1}
-          onClick={() => onCheckedChange(false)}
+        <span
           className={cn(
-            "w-11 rounded-sm text-xs font-medium transition-colors duration-150",
-            !checked ? "bg-raised text-fg" : "text-subtle hover:text-muted",
+            "flex w-11 items-center justify-center rounded-sm text-xs font-medium transition-colors duration-150",
+            !checked ? "bg-raised text-fg" : "text-subtle",
           )}
         >
           Off
-        </button>
-        <button
-          type="button"
-          tabIndex={-1}
-          onClick={() => onCheckedChange(true)}
+        </span>
+        <span
           className={cn(
-            "w-11 rounded-sm text-xs font-medium transition-colors duration-150",
-            checked ? "bg-accent text-accent-fg" : "text-subtle hover:text-muted",
+            "flex w-11 items-center justify-center rounded-sm text-xs font-medium transition-colors duration-150",
+            checked ? "bg-accent text-accent-fg" : "text-subtle",
           )}
         >
           On
-        </button>
-      </div>
+        </span>
+      </button>
     </div>
   );
 }

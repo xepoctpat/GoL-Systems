@@ -48,8 +48,6 @@ const html = `<!doctype html>
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&display=swap"
     />
-  </head>
-  <body class="h-dvh overflow-hidden bg-bg font-sans text-fg">
     <script>
       self.$R = self.$R || {};
       self.$R.tsr = [];
@@ -74,8 +72,12 @@ const html = `<!doctype html>
         buffer: [],
         router: { manifest: { routes: {} }, matches: [] },
       };
+      self.$_TSR.e();
     </script>
     <script type="module" src="./assets/${entryJs}"></script>
+  </head>
+  <body class="h-dvh overflow-hidden bg-bg font-sans text-fg">
+    <div id="homeostat-root" class="h-dvh min-h-0 overflow-hidden"></div>
   </body>
 </html>
 `;
